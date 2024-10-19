@@ -1,0 +1,48 @@
+p + p {
+  color: green;
+}
+
+.text-indent {
+  text-indent: 30px;
+}
+
+.text-align {
+  text-align: right;
+}
+
+.text-decoration {
+  text-decoration: underline;
+}
+
+.letter-spacing {
+  letter-spacing: 3px;
+}
+
+.word-spacing {
+  word-spacing: 10px;
+}
+
+.text-transform {
+  text-transform: uppercase;
+}
+
+.line-height {
+  line-height: 70px;
+}
+
+td {
+  height: 100px;
+  border: 1px solid grey;
+}
+
+.a {
+  vertical-align: top;
+}
+
+.b {
+  vertical-align: middle;
+}
+
+.c {
+  vertical-align: bottom;
+}
