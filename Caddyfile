@@ -1,0 +1,29 @@
+{
+	# desactivar auto TLS, http3.
+    debug
+    auto_https off
+    servers {
+        protocols h1 h2
+    }
+}
+
+:8080 {
+	# cambiar esto a la ruta correcta si se quere servir por caddy
+    root * /home/caches/UTIC/LP3
+    encode gzip
+    file_server
+	# Reparar mimetypes, por alguna razon son servidos con los tipos incorrectos.
+    header /css/* Content-Type "text/css"
+    header /js/* Content-Type "application/javascript"
+    header /*.css Content-Type "text/css"
+    header /*.js Content-Type "application/javascript"
+    header /*.json Content-Type "application/json"
+
+	# Regex para matchear archivos PHP
+    @php {
+        path_regexp \.php$
+    }
+    handle @php {
+        php_fastcgi unix//run/php-fpm/www.sock
+    }
+}
