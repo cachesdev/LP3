@@ -1,0 +1,251 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Administración de productos</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <link href="/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="/css/datatables.min.css" rel="stylesheet" />
+  <script src="/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/datatables.min.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Administración de productos</h1>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Descripcion</th>
+          <th>Categoria</th>
+          <th class="text-right">Precio</th>
+          <th class="text-right">Edición</th>
+        </tr>
+      </thead>
+      <tbody id="datos"></tbody>
+    </table>
+    <button type="button" id="btnAgregar" class="btn btn-success">Agregar</button>
+    <hr />
+    <button type="button" id="btnFinalizar" class="btn btn-danger">Finalizar</button>
+  </div>
+
+  <!-- Modal(Agregar, modificar y borrar) -->
+  <div class="modal fade" id="ModalEditar" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">Modal registro de productos</div>
+        <div class="modal-body">
+          <input type="hidden" id="Codigo" name="Codigo" />
+          <div class="form-row">
+            <div class="form-group col-md-12">
+              <label>Descripción:</label>
+              <input type="text" id="Descripcion" class="form-control" placeholder="" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-12">
+              <label>Precio:</label>
+              <input type="number" id="Precio" class="form-control" placeholder="" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Categoría:</label>
+            <select class="form-control" id="CodigoCategoria"></select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btnConfirmarAgregar" class="btn btn-success">Agregar</button>
+          <button type="button" id="btnModificar" class="btn btn-success">Modificar</button>
+          <button type="button" id="btnBorrar" class="btn btn-danger">Borrar</button>
+          <button type="button" id="btnCancelarEditar" data-dismiss="modal" class="btn btn-warning">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ModalConfirmarCancelar -->
+  <div class="modal fade" id="ModalConfirmarBorrar" tabindex="-1" role="dialog">
+    <div class="modal-dialog" style="max-width: 600px" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Realmente quiere borrarlo?</h2>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btnConfirmarBorrado" class="btn btn-danger">Confirmar</button>
+          <button type="button" id="btnCancelarBorrar" data-dismiss="modal" class="btn btn-warning">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var producto;
+      MostrarProductos();
+      CargarCategorias();
+
+      //Boton que vuelve a la página principal
+      $("#btnFinalizar").click(function () {
+        window.location = "/index.php";
+      });
+
+      $("#btnCancelarEditar").click(function () {
+        $("#ModalEditar").modal("hide");
+      });
+
+      $("#btnCancelarBorrar").click(function () {
+        $("#ModalConfirmarBorrar").modal("hide");
+      });
+
+      //Boton que muestra el diálogo de agregar
+      $("#btnAgregar").click(function () {
+        LimpiarFormulario();
+        $("#btnConfirmarAgregar").prop("disabled", false);
+        $("#btnConfirmarAgregar").show();
+        $("#btnModificar").hide();
+        $("#btnBorrar").hide();
+        $("#ModalEditar").modal("show");
+      });
+
+      //Botones que permiten agregar, borrar y modificar una fila de la tabla.
+      $("#btnConfirmarAgregar").click(function () {
+        RecolectarDatosFormulario();
+        if (!EntradaFormularioCorrecto()) return;
+        $("#ModalEditar").modal("hide");
+        EnviarInformacion("agregar");
+      });
+
+      $("#btnBorrar").click(function () {
+        $("#ModalEditar").modal("hide");
+        $("#ModalConfirmarBorrar").modal("show");
+      });
+
+      $("#btnConfirmarBorrado").click(function () {
+        $("#ModalConfirmarBorrar").modal("hide");
+        RecolectarDatosFormulario();
+        $("#ModalEditar").modal("hide");
+        EnviarInformacion("borrar");
+      });
+
+      $("#btnModificar").click(function () {
+        RecolectarDatosFormulario();
+        if (!EntradaFormularioCorrecto()) return;
+        $("#ModalEditar").modal("hide");
+        EnviarInformacion("modificar");
+      });
+
+      function MostrarProductos() {
+        $.ajax({
+          type: "GET",
+          url: "productos.php?accion=listar",
+          success: function (productos) {
+            let filas = "";
+            for (let producto of productos) {
+              filas += "<tr><td>" + producto.codigo + "</td><td>" + producto.descripcion + "</td><td>" + producto.descripcioncategoria + "</td><td>" + producto.precio + "</td>";
+              filas += '<td><a class="btn btn-primary botoneditar" role="button" href="#" data-codigo="' + producto.codigo + '">Editar</a> </td></tr>';
+            }
+            $("#datos").html(filas);
+
+            //Boton que muestra el diálogo de modificar y borrar
+            $(".botoneditar").click(function () {
+              $("#Codigo").val($(this).get(0).dataset.codigo);
+              RecolectarDatosFormulario();
+              RecuperarProducto("recuperar");
+              $("#btnConfirmarAgregar").hide();
+              $("#btnModificar").show();
+              $("#btnBorrar").show();
+              $("#ModalEditar").modal("show");
+            });
+          },
+          error: function () {
+            alert("Hay un error MostrarProductos");
+          },
+        });
+      }
+
+      function CargarCategorias() {
+        $.ajax({
+          type: "GET",
+          url: "productos.php?accion=listarcategorias",
+          success: function (categorias) {
+            let filas = "";
+            for (let categoria of categorias) {
+              filas += '<option value="' + categoria.codigo + '">' + categoria.descripcion + "</option>";
+            }
+            $("#CodigoCategoria").html(filas);
+          },
+          error: function () {
+            alert("Hay un error CargarCategorias");
+          },
+        });
+      }
+
+      function EnviarInformacion(accion) {
+        $.ajax({
+          type: "POST",
+          url: "productos.php?accion=" + accion,
+          data: producto,
+          success: function (msg) {
+            MostrarProductos();
+          },
+          error: function () {
+            alert("Hay un error EnviarInformacion");
+          },
+        });
+      }
+
+      function RecuperarProducto(accion) {
+        $.ajax({
+          type: "POST",
+          url: "productos.php?accion=" + accion,
+          data: producto,
+          success: function (datos) {
+            $("#Descripcion").val(datos[0]["descripcion"]);
+            $("#Precio").val(datos[0]["precio"]);
+            selectItemByValue(document.getElementById("CodigoCategoria"), datos[0]["codigocategoria"]);
+          },
+          error: function () {
+            alert("Hay un error RecuperarProducto");
+          },
+        });
+      }
+
+      function RecolectarDatosFormulario() {
+        producto = {
+          codigo: $("#Codigo").val(),
+          descripcion: $("#Descripcion").val(),
+          precio: $("#Precio").val(),
+          codigocategoria: $("#CodigoCategoria").val(),
+        };
+      }
+
+      function LimpiarFormulario() {
+        $("#Codigo").val("");
+        $("#Descripcion").val("");
+        $("#Precio").val("");
+        $("#CodigoCategoria").val("");
+      }
+
+      function EntradaFormularioCorrecto() {
+        if (producto["descripcion"] == "") {
+          alert("No puede estar vacía la descripción");
+          return false;
+        }
+        if (producto["precio"] == "") {
+          alert("No puede estar vacío el precio");
+          return false;
+        }
+        return true;
+      }
+
+      function selectItemByValue(elmnt, value) {
+        for (var i = 0; i < elmnt.options.length; i++) {
+          if (elmnt.options[i].value == value) elmnt.selectedIndex = i;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
