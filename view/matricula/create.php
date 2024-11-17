@@ -83,6 +83,10 @@ $cursos = $object->combolistCursos();
                 </select>
                 <div class="invalid-feedback">seleccione un elemento válido!</div>
             </div>
+            <div class="mb-3">
+                <button type="submit" class="btn btn-primary">Crear</button>
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='index.php'">Cancelar</button>
+            </div>
         </form>
     </div>
 
