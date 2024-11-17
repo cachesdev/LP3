@@ -1,3 +1,13 @@
+<?php
+if (!isset($row)) {
+    $row = [
+        "idEstudiante" => "",
+        "nombre" => "",
+        "apellido" => "",
+        "ciudad" => "",
+        "cin" => "",
+    ];
+} ?>
 <div class="modal fade" id="idver<?= $row[
     "idEstudiante"
 ] ?>" tabindex="-1" aria-labelledby="VistaModal" aria-hidden="true">

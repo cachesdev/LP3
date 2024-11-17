@@ -1,3 +1,9 @@
+<?php
+if (!isset($row)) {
+    $row = [
+        "idMatricula" => "",
+    ];
+} ?>
 <div class="modal fade" id="iddel<?= $row["idMatricula"] ?>" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
