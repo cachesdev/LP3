@@ -3,8 +3,11 @@ include_once $_SERVER["DOCUMENT_ROOT"] . "/semana5/tallermvcphp/routes.php";
 
 class detalleFactura
 {
-    function __construct()
+    private $file;
+    public function __construct()
     {
+        $this->file =
+            ROOT_PATH . "tmpdetallefacturas" . $_SESSION["usuario"] . ".json";
     }
 
     public function getDetalles($sesion)

@@ -102,6 +102,9 @@ function agregar(id) {
             $("#resultados").empty();
             $("#resultados").html(data);
         },
+        error: function (xhr, status, error) {
+            console.error("AJAX Error:", status, error);
+        },
     });
 }
 
