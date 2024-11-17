@@ -2,7 +2,7 @@ version: "3"
 
 tasks:
     deploy:
-        desc: Copia archivos del proyecto al directorio de Apache
+        desc: Copy project files to Apache serving directory
         cmds:
             - sudo cp -r . /var/www/html/semana5/tallermvcphp/
             - sudo chown -R apache:apache /var/www/html/semana5/tallermvcphp/
@@ -11,6 +11,11 @@ tasks:
             - sudo restorecon -Rv /var/www/html/semana5/tallermvcphp
 
     clean:
-        desc: Elimina archivos del proyecto en el directorio de Apache
+        desc: Remove project files from serving directory
         cmds:
-            - sudo rm -rf /var/www/html/semana5/tallermvcphp/
+            - sudo rm -rf /var/www/html/semana5/tallermvcphp/*
+
+    unlink:
+        desc: Remove symbolic link for development
+        cmds:
+            - sudo rm /var/www/html/semana5/tallermvcphp

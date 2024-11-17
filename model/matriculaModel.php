@@ -94,7 +94,7 @@ class matriculaModel
     {
         $sql = 'SELECT idEstudiante,
                        CONCAT(nombre, " ", apellido) AS estudiante
-                FROM Estudiantes
+                FROM estudiantes
                 ORDER BY idEstudiante ASC';
         $statement = $this->PDO->prepare($sql);
         return $statement->execute() ? $statement->fetchAll() : false;
