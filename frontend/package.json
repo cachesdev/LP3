@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
@@ -16,6 +16,7 @@
     "@phosphor-icons/vue": "^2.2.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "ky": "^1.7.2",
     "lucide-vue-next": "^0.460.0",
     "pinia": "^2.2.6",
     "radix-vue": "^1.9.10",
