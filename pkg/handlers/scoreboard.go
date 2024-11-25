@@ -5,6 +5,7 @@ import (
 	"examen-final/pkg/scoreboard"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/k0kubun/pp/v3"
 	"github.com/labstack/echo/v4"
@@ -50,28 +51,21 @@ func (h *ScoreboardHandlers) Stream() echo.HandlerFunc {
 
 func (h *ScoreboardHandlers) Increment() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		h.logger.Info("Incrementing...")
+		team, _ := strconv.Atoi(c.QueryParam("team"))
 
-		pp.Println("Antes increment")
-		go h.board.IncrementScore()
-		pp.Println("Despues increment")
+		go h.board.IncrementScore(team)
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "puntaje actualizado",
 		})
 	}
 }
 
-func (h *ScoreboardHandlers) Decrement() echo.HandlerFunc {
+func (h *ScoreboardHandlers) TeamNames() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		input := scoreboard.Game{}
+		team1 := c.QueryParam("team1")
+		team2 := c.QueryParam("team2")
 
-		err := c.Bind(&input)
-		if err != nil {
-			h.logger.Errorw("[Send] Error when binding struct", "Err", err)
-			return err
-		}
-
-		h.board.DecrementScore()
+		go h.board.SetNames(team1, team2)
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "puntaje actualizado",
 		})

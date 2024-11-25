@@ -15,5 +15,5 @@ func (app *Application) addRoutes() {
 
 	api.GET("/scoreboard/stream", app.h.Scoreboard.Stream())
 	api.PATCH("/scoreboard/increment", app.h.Scoreboard.Increment())
-	api.PATCH("/scoreboard/decrement", app.h.Scoreboard.Decrement())
+	api.PATCH("/scoreboard/teams", app.h.Scoreboard.TeamNames())
 }

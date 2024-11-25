@@ -1,30 +1,26 @@
 <script setup lang="ts">
 import { api, apiUrl } from '@/lib/api'
-import { ref, onMounted, onUnmounted, watchEffect } from 'vue'
+import { ref, onMounted, onUnmounted, watchEffect, computed } from 'vue'
 import { Button } from '@/components/ui/button'
 
-type Set = {
-  team1: number
-  team2: number
+type Score = {
+	team1: number
+	team2: number
 }
 
-type Team = {
-  name: string;
-  score: number;
-};
-
 type Game = {
-  currentScore: {
-    team1: Team
-    team2: Team
-  }
-  currentSet: number;
-  sets: Array<Set>;
-};
+	Teams: {
+		team1: string
+		team2: string
+	}
+	currentScore: Score
+	setScores: Array<Score>
+	currentSet: number
+}
 
 const score = ref<Game>()
 watchEffect(() => {
-  console.log(score.value)
+	console.log(score.value)
 })
 
 // warning por set
@@ -39,8 +35,8 @@ watchEffect(() => {
 onMounted(() => {
 	const eventSource = new EventSource(`${apiUrl}/scoreboard/stream`)
 
-	eventSource.onmessage = (event: MessageEvent<Game>) => {
-		score.value = event.data
+	eventSource.onmessage = (event: MessageEvent) => {
+		score.value = JSON.parse(event.data) as Game
 	}
 
 	eventSource.onerror = (error) => {
@@ -48,25 +44,30 @@ onMounted(() => {
 		eventSource.close()
 	}
 
+	api.patch('scoreboard/teams', {
+		searchParams: { team1: 'Equipo Cañon', team2: 'Equipo Trompeta' },
+	}).then()
+
 	onUnmounted(() => {
 		eventSource.close()
 	})
 })
 
-async function increment() {
-	console.log(await api.patch('scoreboard/increment').json())
-}
-async function decrement() {
-	console.log(await api.patch('scoreboard/decrement').json())
+const prettyScore = computed(() => {
+	return JSON.stringify(score.value, null, 4)
+})
+
+async function increment(team: number) {
+	console.log(await api.patch('scoreboard/increment', { searchParams: { team } }).json())
 }
 </script>
 
 <template>
 	<main>
-		<Button @click="increment">increment</Button>
-		<Button @click="decrement">decrement</Button>
-		<ul>
-      <li>{{ score }}</li>
-		</ul>
+		<Button @click="increment(1)">increment team 1</Button>
+		<Button @click="increment(2)">increment team 2</Button>
+		<div class="prose">
+			<pre v-html="prettyScore"></pre>
+		</div>
 	</main>
 </template>
