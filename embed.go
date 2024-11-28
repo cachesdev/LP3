@@ -2,5 +2,8 @@ package embed
 
 import "embed"
 
-//go:embed frontend/dist/*
+//go:embed vue/dist/*
 var VueFS embed.FS
+
+//go:embed svelte/build/*
+var SvelteFS embed.FS

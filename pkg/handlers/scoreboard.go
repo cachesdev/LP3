@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/k0kubun/pp/v3"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 )
@@ -29,7 +28,7 @@ func NewScoreboardHandlers(
 
 func (h *ScoreboardHandlers) Stream() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		ch := make(chan scoreboard.Game)
+		ch := make(chan *scoreboard.Match)
 		h.board.AddClient(ch)
 		defer h.board.RemoveClient(ch)
 
@@ -40,7 +39,6 @@ func (h *ScoreboardHandlers) Stream() echo.HandlerFunc {
 		c.Response().Header().Set(echo.HeaderConnection, "keep-alive")
 
 		for msg := range ch {
-			pp.Print(msg)
 			jsonMsg, _ := json.Marshal(msg)
 			fmt.Fprintf(c.Response(), "data: %s\n\n", jsonMsg)
 			c.Response().Flush()
@@ -53,7 +51,10 @@ func (h *ScoreboardHandlers) Increment() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		team, _ := strconv.Atoi(c.QueryParam("team"))
 
-		go h.board.IncrementScore(team)
+		err := h.board.IncrementScore(team)
+		if err != nil {
+			h.logger.Errorw("[Increment] Error al aumentar puntaje", "team", team, "err", err)
+		}
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "puntaje actualizado",
 		})
@@ -65,7 +66,7 @@ func (h *ScoreboardHandlers) TeamNames() echo.HandlerFunc {
 		team1 := c.QueryParam("team1")
 		team2 := c.QueryParam("team2")
 
-		go h.board.SetNames(team1, team2)
+		h.board.SetNames(team1, team2)
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "puntaje actualizado",
 		})

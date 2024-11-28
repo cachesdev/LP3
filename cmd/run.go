@@ -19,8 +19,9 @@ func run() error {
 	// echo
 	e := echo.New()
 
-	//scoreboard
-	board := scoreboard.NewScoreboard(nil)
+	// scoreboard
+	board := scoreboard.NewScoreboard()
+	board.Initialize()
 
 	// handlers
 	handlers := handlers.New(logger, board)

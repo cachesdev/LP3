@@ -7,7 +7,16 @@ args_bin = []
 bin = "./bin/main"
 cmd = "go build -o ./bin/main ./cmd/"
 delay = 1000
-exclude_dir = ["assets", "tmp", "bin", "frontend", "php", "vendor", "testdata"]
+exclude_dir = [
+    "assets",
+    "tmp",
+    "bin",
+    "vue",
+    "svelte",
+    "php",
+    "vendor",
+    "testdata",
+]
 exclude_file = []
 exclude_regex = ["_test.go"]
 exclude_unchanged = false
