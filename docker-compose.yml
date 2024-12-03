@@ -1,0 +1,20 @@
+services:
+    web:
+        build:
+            context: .
+            dockerfile: Dockerfile-web
+        ports:
+            - "8888:80"
+        volumes:
+            - ./php/logs:/var/www/html/logs
+        environment:
+            - PHP_ENV=production
+        depends_on:
+            - go-api
+
+    go-api:
+        build:
+            context: .
+            dockerfile: Dockerfile-go
+        environment:
+            - GO_ENV=production

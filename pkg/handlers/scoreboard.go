@@ -8,16 +8,16 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
+	"github.com/rs/zerolog"
 )
 
 type ScoreboardHandlers struct {
-	logger *zap.SugaredLogger
+	logger zerolog.Logger
 	board  *scoreboard.Scoreboard
 }
 
 func NewScoreboardHandlers(
-	logger *zap.SugaredLogger,
+	logger zerolog.Logger,
 	board *scoreboard.Scoreboard,
 ) *ScoreboardHandlers {
 	return &ScoreboardHandlers{
@@ -32,7 +32,7 @@ func (h *ScoreboardHandlers) Stream() echo.HandlerFunc {
 		h.board.AddClient(ch)
 		defer h.board.RemoveClient(ch)
 
-		h.logger.Infow("Cliente conectado", "IP", c.RealIP())
+		h.logger.Info().Str("IP", c.RealIP()).Msg("Cliente conectado")
 
 		c.Response().Header().Set(echo.HeaderContentType, "text/event-stream")
 		c.Response().Header().Set(echo.HeaderCacheControl, "no-cache")
@@ -53,7 +53,10 @@ func (h *ScoreboardHandlers) Increment() echo.HandlerFunc {
 
 		err := h.board.IncrementScore(team)
 		if err != nil {
-			h.logger.Errorw("[Increment] Error al aumentar puntaje", "team", team, "err", err)
+			h.logger.Error().
+				Err(err).
+				Int("team", team).
+				Msg("[Increment] Error al aumentar puntaje")
 		}
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "puntaje actualizado",
@@ -70,5 +73,30 @@ func (h *ScoreboardHandlers) TeamNames() echo.HandlerFunc {
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "puntaje actualizado",
 		})
+	}
+}
+
+func (h *ScoreboardHandlers) SetRules() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var newRules scoreboard.Rules
+
+		err := c.Bind(&newRules)
+		if err != nil {
+			h.logger.Error().Err(err).Msg("Error al bindear struct")
+			return err
+		}
+
+		h.board.ConfigureMatch(newRules)
+
+		rules := h.board.Rules()
+		return c.JSON(200, rules)
+	}
+}
+
+func (h *ScoreboardHandlers) GetRules() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		rules := h.board.Rules()
+
+		return c.JSON(200, rules)
 	}
 }

@@ -20,11 +20,11 @@ func (app *Application) addMiddleware() {
 		LogStatus: true,
 		LogMethod: true,
 		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			app.logger.Infow("Request Received",
-				"Method", v.Method,
-				"Status", v.Status,
-				"URI", v.URI,
-			)
+			app.logger.Info().
+				Str("Method", v.Method).
+				Int("status", v.Status).
+				Str("URI", v.URI).
+				Msg("Request")
 
 			return nil
 		},

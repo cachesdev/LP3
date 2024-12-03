@@ -3,14 +3,14 @@ package handlers
 import (
 	"examen-final/pkg/scoreboard"
 
-	"go.uber.org/zap"
+	"github.com/rs/zerolog"
 )
 
 type Handlers struct {
 	Scoreboard *ScoreboardHandlers
 }
 
-func New(logger *zap.SugaredLogger, board *scoreboard.Scoreboard) *Handlers {
+func New(logger zerolog.Logger, board *scoreboard.Scoreboard) *Handlers {
 	return &Handlers{
 		Scoreboard: NewScoreboardHandlers(logger, board),
 	}

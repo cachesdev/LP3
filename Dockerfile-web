@@ -1,0 +1,45 @@
+# Build
+FROM node:20-alpine AS svelte-builder
+WORKDIR /app/svelte
+COPY svelte/package*.json ./
+RUN npm install
+COPY svelte/ ./
+RUN npm run build
+
+FROM node:20-alpine AS vue-builder
+WORKDIR /app/vue
+COPY vue/package*.json ./
+RUN npm install
+COPY vue/ ./
+RUN npm run build
+
+# Final
+FROM php:8.2-apache
+
+# Instalar dependencias y extensions de PHP
+RUN apt-get update && apt-get install -y \
+    libzip-dev \
+    unzip \
+    && docker-php-ext-install zip pdo pdo_mysql
+
+# Instalar Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Configurar Apache
+RUN a2enmod rewrite proxy proxy_http
+COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
+
+# Copiamos la aplicacion PHP al contenedor, instalamos dependencias
+WORKDIR /var/www/html
+COPY php/ ./
+RUN composer install --no-dev --optimize-autoloader
+
+# Copiamos los Frontend compilados
+COPY --from=svelte-builder /app/svelte/build /var/www/html/public/svelte
+COPY --from=vue-builder /app/vue/dist /var/www/html/public/vue
+
+# Configuramos permisos
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html
+
+EXPOSE 80

@@ -10,7 +10,6 @@ export default defineConfig({
 				changeOrigin: true,
 				rewrite: (path) => {
 					path.replace(/^\/api\/v1/, "/api/v1");
-					// console.log(path);
 					return path;
 				},
 			},

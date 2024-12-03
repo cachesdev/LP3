@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-type ScoreKeeperImpl struct {
+type ScoreKeeper struct {
 	mu           sync.RWMutex
 	match        *Match
 	rules        *PadelRulesEngine
@@ -13,7 +13,7 @@ type ScoreKeeperImpl struct {
 	observers    []func(*Match)
 }
 
-func NewScoreKeeper(team1, team2 string) *ScoreKeeperImpl {
+func NewScoreKeeper(team1, team2 string) *ScoreKeeper {
 	rules := NewPadelRulesEngine()
 	match := &Match{
 		Team1: team1,
@@ -25,7 +25,7 @@ func NewScoreKeeper(team1, team2 string) *ScoreKeeperImpl {
 		Sets:        make([]Set, 0),
 	}
 
-	return &ScoreKeeperImpl{
+	return &ScoreKeeper{
 		match:        match,
 		rules:        rules,
 		stateMachine: NewPadelStateMachine(rules),
@@ -33,7 +33,16 @@ func NewScoreKeeper(team1, team2 string) *ScoreKeeperImpl {
 	}
 }
 
-func (sk *ScoreKeeperImpl) IncrementScore(team int) error {
+func (sk *ScoreKeeper) SetNames(team1 string, team2 string) {
+	sk.mu.Lock()
+	sk.match.Team1 = team1
+	sk.match.Team2 = team2
+	sk.mu.Unlock()
+
+	sk.notifyObservers()
+}
+
+func (sk *ScoreKeeper) IncrementScore(team int) error {
 	sk.mu.Lock()
 	defer sk.mu.Unlock()
 
@@ -41,15 +50,20 @@ func (sk *ScoreKeeperImpl) IncrementScore(team int) error {
 		return fmt.Errorf("[IncrementScore] Punto invalido")
 	}
 
-	nextPoints, err := sk.rules.NextPoint(sk.match.CurrentGame, team)
-	if err != nil {
-		return fmt.Errorf("[IncrementScore] Error calculando siguiente punto: %w", err)
-	}
+	nextPoints := sk.rules.NextPoint(sk.match.CurrentGame, team)
 
-	if team == 1 {
-		sk.match.CurrentGame.Team1Score = nextPoints
+	if sk.match.CurrentGame.IsTiebreak {
+		if team == 1 {
+			sk.match.CurrentGame.Team1TBScore = nextPoints
+		} else {
+			sk.match.CurrentGame.Team2TBScore = nextPoints
+		}
 	} else {
-		sk.match.CurrentGame.Team2Score = nextPoints
+		if team == 1 {
+			sk.match.CurrentGame.Team1Score = nextPoints
+		} else {
+			sk.match.CurrentGame.Team2Score = nextPoints
+		}
 	}
 
 	newState, err := sk.stateMachine.Transition(sk.match, team)
@@ -66,7 +80,7 @@ func (sk *ScoreKeeperImpl) IncrementScore(team int) error {
 	return nil
 }
 
-func (sk *ScoreKeeperImpl) handleStateChange(state GameState, team int) error {
+func (sk *ScoreKeeper) handleStateChange(state GameState, team int) error {
 	switch state {
 	case GameOver:
 		if err := sk.handleGameOver(team); err != nil {
@@ -92,7 +106,7 @@ func (sk *ScoreKeeperImpl) handleStateChange(state GameState, team int) error {
 	}
 }
 
-func (sk *ScoreKeeperImpl) handleGameOver(team int) error {
+func (sk *ScoreKeeper) handleGameOver(team int) error {
 	completedGame := *sk.match.CurrentGame
 	sk.match.CurrentSet.Games = append(sk.match.CurrentSet.Games, completedGame)
 
@@ -111,7 +125,7 @@ func (sk *ScoreKeeperImpl) handleGameOver(team int) error {
 	return nil
 }
 
-func (sk *ScoreKeeperImpl) handleSetOver(team int) error {
+func (sk *ScoreKeeper) handleSetOver(team int) error {
 	completedSet := *sk.match.CurrentSet
 	sk.match.Sets = append(sk.match.Sets, completedSet)
 
@@ -130,17 +144,17 @@ func (sk *ScoreKeeperImpl) handleSetOver(team int) error {
 }
 
 // TODO: Implement me
-func (sk *ScoreKeeperImpl) handleMatchOver() error {
+func (sk *ScoreKeeper) handleMatchOver() error {
 	return nil
 }
 
-func (sk *ScoreKeeperImpl) GetCurrentScore() *Match {
+func (sk *ScoreKeeper) GetCurrentScore() *Match {
 	sk.mu.RLock()
 	defer sk.mu.RUnlock()
 	return sk.match
 }
 
-func (sk *ScoreKeeperImpl) ResetGame() {
+func (sk *ScoreKeeper) ResetGame() {
 	sk.mu.Lock()
 	defer sk.mu.Unlock()
 
@@ -148,7 +162,7 @@ func (sk *ScoreKeeperImpl) ResetGame() {
 	sk.notifyObservers()
 }
 
-func (sk *ScoreKeeperImpl) ResetSet() {
+func (sk *ScoreKeeper) ResetSet() {
 	sk.mu.Lock()
 	defer sk.mu.Unlock()
 
@@ -159,7 +173,7 @@ func (sk *ScoreKeeperImpl) ResetSet() {
 	sk.notifyObservers()
 }
 
-func (sk *ScoreKeeperImpl) ResetMatch() {
+func (sk *ScoreKeeper) ResetMatch() {
 	sk.mu.Lock()
 	defer sk.mu.Unlock()
 
@@ -176,13 +190,13 @@ func (sk *ScoreKeeperImpl) ResetMatch() {
 }
 
 // metodos patron observador
-func (sk *ScoreKeeperImpl) AddObserver(observer func(*Match)) {
+func (sk *ScoreKeeper) AddObserver(observer func(*Match)) {
 	sk.mu.Lock()
 	defer sk.mu.Unlock()
 	sk.observers = append(sk.observers, observer)
 }
 
-func (sk *ScoreKeeperImpl) RemoveObserver(observer func(*Match)) {
+func (sk *ScoreKeeper) RemoveObserver(observer func(*Match)) {
 	sk.mu.Lock()
 	defer sk.mu.Unlock()
 	for i, obs := range sk.observers {
@@ -193,7 +207,7 @@ func (sk *ScoreKeeperImpl) RemoveObserver(observer func(*Match)) {
 	}
 }
 
-func (sk *ScoreKeeperImpl) notifyObservers() {
+func (sk *ScoreKeeper) notifyObservers() {
 	for _, observer := range sk.observers {
 		observer(sk.match)
 	}

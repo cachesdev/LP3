@@ -4,17 +4,29 @@ import (
 	"examen-final/pkg/handlers"
 	"examen-final/pkg/scoreboard"
 	"fmt"
+	"os"
+	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
+	"github.com/rs/zerolog"
 )
 
 // run se debe considerar como un Main, pero que retorna un error. principalmente
 // usado para injeccion de dependencias.
 func run() error {
 	// logger
-	z, _ := zap.NewDevelopment(zap.AddCaller())
-	logger := z.Sugar()
+	logWriter := zerolog.ConsoleWriter{
+		Out:        os.Stderr,
+		NoColor:    false,
+		TimeFormat: time.RFC3339,
+		FormatErrFieldValue: func(i interface{}) string {
+			// Imprime errores en rojo y con newline
+			return "\033[31m" + strings.ReplaceAll(fmt.Sprintf("%v", i), "\\n", "\n") + "\033[0m"
+		},
+	}
+
+	logger := zerolog.New(logWriter).With().Timestamp().Caller().Logger()
 
 	// echo
 	e := echo.New()

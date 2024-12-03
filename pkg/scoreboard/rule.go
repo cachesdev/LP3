@@ -1,16 +1,8 @@
 package scoreboard
 
-import (
-	"fmt"
-
-	"github.com/k0kubun/pp/v3"
-)
-
 type Rules struct {
-	SetsToWin     int
-	GamesPerSet   int
-	PointsPerGame int
-	UseTiebreak   bool
+	SetsToWin   int `json:"setsToWin"`
+	GamesPerSet int `json:"gamesPerSet"`
 }
 
 type PadelRulesEngine struct {
@@ -20,33 +12,29 @@ type PadelRulesEngine struct {
 func NewPadelRulesEngine() *PadelRulesEngine {
 	return &PadelRulesEngine{
 		rules: Rules{
-			SetsToWin:     2,
-			GamesPerSet:   6,
-			PointsPerGame: 40,
-			UseTiebreak:   true,
+			SetsToWin:   2,
+			GamesPerSet: 6,
 		},
 	}
 }
 
-func (r *PadelRulesEngine) IsValidPoint(match *Match, team int) bool {
-	if match == nil || match.CurrentGame == nil {
-		return false
-	}
+func (r *PadelRulesEngine) Rules() Rules {
+	return r.rules
+}
 
-	pp.Println("Antes MatchOver")
-	// Can't score if match is over
+func (r *PadelRulesEngine) Configure(rules Rules) {
+	r.rules = rules
+}
+
+func (r *PadelRulesEngine) IsValidPoint(match *Match, team int) bool {
 	if r.IsMatchOver(match) {
 		return false
 	}
 
-	pp.Println("Antes SetOver")
-	// Can't score if set is over
 	if r.IsSetOver(match.CurrentSet) {
 		return false
 	}
 
-	pp.Println("Antes GameOver")
-	// Can't score if game is over
 	if r.IsGameOver(match.CurrentGame) {
 		return false
 	}
@@ -54,85 +42,87 @@ func (r *PadelRulesEngine) IsValidPoint(match *Match, team int) bool {
 	return true
 }
 
-func (r *PadelRulesEngine) NextPoint(game *Game, team int) (int, error) {
-	if game == nil {
-		return 0, fmt.Errorf("game is nil")
-	}
+// NextPoint se encarga de transicionar los puntos en un Game. en el caso de un
+// tiebreak, el conteo de puntos pasa del conteo tradicional (0 15 30 40) a un
+// conteo n + 1 (1 2 3 4 ... etc)
+func (r *PadelRulesEngine) NextPoint(game *Game, team int) int {
+	var currentPoints int
+	var otherPoints int
 
-	currentPoints := game.Team1Score
-	if team == 2 {
+	switch team {
+	case 1:
+		currentPoints = game.Team1Score
+	case 2:
 		currentPoints = game.Team2Score
 	}
 
 	if game.IsTiebreak {
-		return currentPoints + 1, nil // In tiebreak, points increment normally
+		switch team {
+		case 1:
+			currentPoints = game.Team1Score
+		case 2:
+			currentPoints = game.Team2Score
+		}
+
+		return currentPoints + 1
 	}
 
-	// Regular game scoring
 	switch currentPoints {
 	case 0:
-		return 15, nil
+		return 15
 	case 15:
-		return 30, nil
+		return 30
 	case 30:
-		return 40, nil
+		return 40
 	case 40:
-		otherPoints := game.Team2Score
-		if team == 2 {
+		switch team {
+		case 1:
+			otherPoints = game.Team2Score
+		case 2:
 			otherPoints = game.Team1Score
 		}
+
 		if otherPoints == 40 {
-			return 41, nil // Advantage
+			return 41 // Punto de Oro, GameOver
 		}
-		return 50, nil // Game won
-	case 41: // Has advantage
-		return 50, nil // Game won
-	default:
-		return 0, fmt.Errorf("invalid point state")
 	}
+
+	return -1
 }
 
 func (r *PadelRulesEngine) IsGameOver(game *Game) bool {
-	if game == nil {
-		return false
-	}
-
 	if game.IsTiebreak {
 		return r.isTiebreakOver(game)
 	}
 
-	return game.Team1Score >= 50 || game.Team2Score >= 50
+	return game.Team1Score >= 41 || game.Team2Score >= 41
 }
 
 func (r *PadelRulesEngine) isTiebreakOver(game *Game) bool {
-	// Must reach at least 7 points and win by 2
-	if game.Team1Score >= 7 || game.Team2Score >= 7 {
-		return abs(game.Team1Score-game.Team2Score) >= 2
+	// Debe de alcanzar como minimo 7 puntos con diferencia de 2
+	if game.Team1TBScore >= 7 || game.Team2TBScore >= 7 {
+		return abs(game.Team1TBScore-game.Team2TBScore) >= 2
 	}
 	return false
 }
 
 func (r *PadelRulesEngine) IsSetOver(set *Set) bool {
-	if set == nil {
-		return false
+	game, ok := find(set.Games, func(e Game) bool { return e.IsTiebreak })
+	if ok {
+		return r.isTiebreakOver(&game)
 	}
 
 	// Regular set win (6 games with 2 game difference)
 	if (set.Team1Games >= r.rules.GamesPerSet ||
 		set.Team2Games >= r.rules.GamesPerSet) &&
 		abs(set.Team1Games-set.Team2Games) >= 2 {
-		pp.Println("Returning true...")
 		return true
 	}
 
 	// Tiebreak situation
-	if r.rules.UseTiebreak &&
-		set.Team1Games == r.rules.GamesPerSet &&
+	if set.Team1Games == r.rules.GamesPerSet &&
 		set.Team2Games == r.rules.GamesPerSet {
-		if set.Games == nil || len(set.Games) == 0 {
-			return false
-		}
-		return r.IsGameOver(&set.Games[len(set.Games)-1])
+		return false
 	}
 
 	// Extended set (7-5)
@@ -145,28 +135,33 @@ func (r *PadelRulesEngine) IsSetOver(set *Set) bool {
 }
 
 func (r *PadelRulesEngine) IsMatchOver(match *Match) bool {
-	if match == nil {
-		return false
-	}
-
 	return match.Team1Sets >= r.rules.SetsToWin ||
 		match.Team2Sets >= r.rules.SetsToWin
 }
 
 func (r *PadelRulesEngine) ShouldStartTiebreak(set *Set) bool {
-	if set == nil {
-		return false
-	}
-
-	return r.rules.UseTiebreak &&
-		set.Team1Games == r.rules.GamesPerSet &&
+	return set.Team1Games == r.rules.GamesPerSet &&
 		set.Team2Games == r.rules.GamesPerSet
 }
 
-// Helper function
+// abs es similar a `math.Abs`, pero solo para integer.
 func abs(n int) int {
 	if n < 0 {
 		return -n
 	}
 	return n
+}
+
+// find encuentra el primer elemento en el cual el callback retorne verdadero.
+func find[S ~[]E, E any](s S, f func(e E) bool) (E, bool) {
+	var cond bool
+	var ret E
+	for _, v := range s {
+		cond = f(v)
+		if cond {
+			return v, true
+		}
+	}
+
+	return ret, false
 }

@@ -9,7 +9,8 @@ const (
 	GamePoint
 	Deuce
 	Advantage
-	TiebreakPlay
+	TiebreakGame
+	TiebreakSet
 	GameOver
 	SetOver
 	MatchOver
@@ -21,7 +22,8 @@ func (s GameState) String() string {
 		"GamePoint",
 		"Deuce",
 		"Advantage",
-		"TiebreakPlay",
+		"TiebreakGame",
+		"TebreakSet",
 		"GameOver",
 		"SetOver",
 		"MatchOver",
@@ -45,14 +47,10 @@ func (sm *PadelStateMachine) GetCurrentState() GameState {
 }
 
 func (sm *PadelStateMachine) Transition(match *Match, team int) (GameState, error) {
-	if match == nil || match.CurrentGame == nil {
-		return sm.currentState, fmt.Errorf("invalid match state")
-	}
-
 	nextState := sm.determineNextState(match, team)
 
 	if !sm.IsValidTransition(sm.currentState, nextState) {
-		return sm.currentState, fmt.Errorf("invalid state transition from %s to %s",
+		return sm.currentState, fmt.Errorf("[Transition] transicion de estado invalido, %s a %s",
 			sm.currentState, nextState)
 	}
 
@@ -61,24 +59,21 @@ func (sm *PadelStateMachine) Transition(match *Match, team int) (GameState, erro
 }
 
 func (sm *PadelStateMachine) determineNextState(match *Match, team int) GameState {
-	// Check match over first
 	if sm.rules.IsMatchOver(match) {
 		return MatchOver
 	}
 
-	// Check set over
 	if sm.rules.IsSetOver(match.CurrentSet) {
 		return SetOver
 	}
 
-	// Check game over
 	if sm.rules.IsGameOver(match.CurrentGame) {
 		return GameOver
 	}
 
 	// Handle tiebreak
 	if match.CurrentGame.IsTiebreak {
-		return TiebreakPlay
+		return TiebreakGame
 	}
 
 	// Regular game state determination
@@ -108,7 +103,6 @@ func (sm *PadelStateMachine) IsValidTransition(from, to GameState) bool {
 		RegularPlay: {
 			GamePoint,
 			Deuce,
-			TiebreakPlay,
 		},
 		GamePoint: {
 			GameOver,
@@ -123,18 +117,19 @@ func (sm *PadelStateMachine) IsValidTransition(from, to GameState) bool {
 			GameOver,
 			Deuce,
 		},
-		TiebreakPlay: {
+		TiebreakGame: {
 			GameOver,
 		},
 		GameOver: {
 			RegularPlay,
+			TiebreakGame,
 			SetOver,
 		},
 		SetOver: {
 			RegularPlay,
 			MatchOver,
 		},
-		MatchOver: {}, // No valid transitions from match over
+		MatchOver: {},
 	}
 
 	// Check if the transition is valid
@@ -163,11 +158,11 @@ func (sm *PadelStateMachine) IsCriticalPoint(match *Match) bool {
 	switch sm.currentState {
 	case GamePoint, Deuce, Advantage:
 		return true
-	case TiebreakPlay:
+	case TiebreakGame:
 		// Critical point in tiebreak when either player is one point from winning
 		game := match.CurrentGame
-		return (game.Team1Score >= 6 || game.Team2Score >= 6) &&
-			abs(game.Team1Score-game.Team2Score) >= 1
+		return (game.Team1TBScore >= 7 || game.Team2TBScore >= 7) &&
+			abs(game.Team1TBScore-game.Team2TBScore) >= 2
 	default:
 		return false
 	}

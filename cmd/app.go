@@ -5,12 +5,12 @@ import (
 	"fmt"
 
 	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
+	"github.com/rs/zerolog"
 )
 
 type Application struct {
 	e      *echo.Echo
-	logger *zap.SugaredLogger
+	logger zerolog.Logger
 	h      *handlers.Handlers
 }
 
