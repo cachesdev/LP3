@@ -95,7 +95,7 @@
 
 <main class="flex h-dvh w-dvw items-center justify-center gap-4">
 	<div class="flex h-full w-full max-w-2xl flex-col items-center justify-center">
-		{@render botonera()}
+		<!-- {@render botonera()} -->
 		{@render scoreBoard()}
 	</div>
 </main>

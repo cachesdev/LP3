@@ -47,7 +47,7 @@ func (r *PadelRulesEngine) IsValidPoint(match *Match, team int) bool {
 // conteo n + 1 (1 2 3 4 ... etc)
 func (r *PadelRulesEngine) NextPoint(game *Game, team int) int {
 	var currentPoints int
-	var otherPoints int
+	// var otherPoints int
 
 	switch team {
 	case 1:
@@ -59,9 +59,9 @@ func (r *PadelRulesEngine) NextPoint(game *Game, team int) int {
 	if game.IsTiebreak {
 		switch team {
 		case 1:
-			currentPoints = game.Team1Score
+			currentPoints = game.Team1TBScore
 		case 2:
-			currentPoints = game.Team2Score
+			currentPoints = game.Team2TBScore
 		}
 
 		return currentPoints + 1
@@ -75,16 +75,16 @@ func (r *PadelRulesEngine) NextPoint(game *Game, team int) int {
 	case 30:
 		return 40
 	case 40:
-		switch team {
-		case 1:
-			otherPoints = game.Team2Score
-		case 2:
-			otherPoints = game.Team1Score
-		}
+		// switch team {
+		// case 1:
+		// 	otherPoints = game.Team2Score
+		// case 2:
+		// 	otherPoints = game.Team1Score
+		// }
 
-		if otherPoints == 40 {
-			return 41 // Punto de Oro, GameOver
-		}
+		// if otherPoints == 40 {
+		return 41 // Punto de Oro, GameOver
+		// }
 	}
 
 	return -1

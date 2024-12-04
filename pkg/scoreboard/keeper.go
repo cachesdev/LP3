@@ -44,7 +44,6 @@ func (sk *ScoreKeeper) SetNames(team1 string, team2 string) {
 
 func (sk *ScoreKeeper) IncrementScore(team int) error {
 	sk.mu.Lock()
-	defer sk.mu.Unlock()
 
 	if !sk.rules.IsValidPoint(sk.match, team) {
 		return fmt.Errorf("[IncrementScore] Punto invalido")
@@ -77,6 +76,7 @@ func (sk *ScoreKeeper) IncrementScore(team int) error {
 
 	sk.notifyObservers()
 
+	sk.mu.Unlock()
 	return nil
 }
 

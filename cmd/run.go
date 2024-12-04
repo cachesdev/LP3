@@ -44,9 +44,13 @@ func run() error {
 		h:      handlers,
 	}
 
+	pid := os.Getpid()
+	logger.Info().Int("PID", pid).Msg("PID")
+
 	err := app.Start()
 	if err != nil {
 		return fmt.Errorf("[run] Error durante inicializacion: %w", err)
 	}
+
 	return nil
 }

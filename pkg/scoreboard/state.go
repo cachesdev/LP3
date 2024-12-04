@@ -7,8 +7,6 @@ type GameState int
 const (
 	RegularPlay GameState = iota
 	GamePoint
-	Deuce
-	Advantage
 	TiebreakGame
 	TiebreakSet
 	GameOver
@@ -20,8 +18,6 @@ func (s GameState) String() string {
 	return [...]string{
 		"RegularPlay",
 		"GamePoint",
-		"Deuce",
-		"Advantage",
 		"TiebreakGame",
 		"TebreakSet",
 		"GameOver",
@@ -86,10 +82,6 @@ func (sm *PadelStateMachine) determineNextState(match *Match, team int) GameStat
 	}
 
 	switch {
-	case teamScore == 40 && otherScore == 40:
-		return Deuce
-	case teamScore == 41 || otherScore == 41:
-		return Advantage
 	case teamScore == 40 || otherScore == 40:
 		return GamePoint
 	default:
@@ -102,20 +94,10 @@ func (sm *PadelStateMachine) IsValidTransition(from, to GameState) bool {
 	transitions := map[GameState][]GameState{
 		RegularPlay: {
 			GamePoint,
-			Deuce,
 		},
 		GamePoint: {
 			GameOver,
-			Deuce,
 			RegularPlay,
-		},
-		Deuce: {
-			Advantage,
-			RegularPlay,
-		},
-		Advantage: {
-			GameOver,
-			Deuce,
 		},
 		TiebreakGame: {
 			GameOver,
@@ -156,7 +138,7 @@ func (sm *PadelStateMachine) IsValidTransition(from, to GameState) bool {
 // Helper method to determine if we're at a critical point
 func (sm *PadelStateMachine) IsCriticalPoint(match *Match) bool {
 	switch sm.currentState {
-	case GamePoint, Deuce, Advantage:
+	case GamePoint:
 		return true
 	case TiebreakGame:
 		// Critical point in tiebreak when either player is one point from winning
